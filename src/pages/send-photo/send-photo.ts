@@ -1,5 +1,5 @@
 import { Component, ViewChild } from '@angular/core';
-import { Slides, NavParams, ViewController, LoadingController, NavController, AlertController } from 'ionic-angular';
+import { Slides, NavParams, ViewController, LoadingController, NavController, AlertController, ToastController } from 'ionic-angular';
 import { Validators, FormBuilder, FormGroup } from '@angular/forms';
 import { AngularFireDatabase, FirebaseListObservable } from 'angularfire2/database';
 import { AngularFireAuth } from 'angularfire2/auth';
@@ -55,7 +55,8 @@ export class SendPhotoPage {
     private viewCtrl: ViewController,
     private navParams: NavParams,
     private db: AngularFireDatabase,
-    private afAuth: AngularFireAuth) {
+    private afAuth: AngularFireAuth,
+    private toastCtrl: ToastController) {
     this.photos = this.db.list('/photos');
     this.photo = this.navParams.get('photo');
     this.afAuth.authState.subscribe(user => {
@@ -103,6 +104,32 @@ export class SendPhotoPage {
   }
 
   submit() {
+    if (!navigator.onLine) {
+      let data = JSON.parse(localStorage.getItem('photos'));
+      if (!data)
+        data = [];
+
+      data.push({
+        user: this.user,
+        image: this.photo,
+        filter: this.filter,
+        location: this.location,
+        title: this.form.controls['title'].value,
+        message: this.form.controls['message'].value,
+        date: firebase.database.ServerValue.TIMESTAMP
+      });
+      localStorage.setItem('photos', JSON.stringify(data));
+
+      let toast = this.toastCtrl.create({
+        message: 'A imagem será enviada quando você estiver online',
+        duration: 1500
+      });
+      toast.present();
+      this.navCtrl.setRoot(HomePage);
+
+      return;
+    }
+
     let loader = this.loadingCtrl.create({ content: "Enviando..." });
     loader.present();
 
